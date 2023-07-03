@@ -49,13 +49,14 @@ if selected_stock:
         fig=go.Figure()
         fig.add_trace(go.Scatter(x=data['Date'],y=data['Adj Close'],name=selected_stock))
         if selected_etf:
-            fig.add_trace(go.Scatter(x=data1['Date'],y=data1['Adj Close'],name=selected_etf))
+            fig.add_trace(go.Scatter(x=data1['Date'],y=data1['Adj Close'],name=selected_etf,yaxis='y2'))
         fig.layout.update(title_text="Time Series Data",xaxis_rangeslider_visible=False)
-        st.plotly_chart(fig)
+        fig.update_layout(yaxis2=dict(overlaying='y',side='right'))
+        st.plotly_chart(fig,use_container_width=True)
 
     def plot_box_plot():
         fig = px.box(data_frame=data, x='YQ', y='Adj Close', title=selected_stock +'- Adj Close')
-        st.plotly_chart(fig)
+        st.plotly_chart(fig,use_container_width=True)
 
     col1,col2=st.columns(2)
     with col1:
