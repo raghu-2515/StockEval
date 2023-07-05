@@ -29,6 +29,7 @@ if selected_stock:
     #@st.cache
     def load_data(ticker):
         data=yf.download(ticker,period=Time_Frame,interval=Time_Interval)
+        #data_growth=(data.pct_change().fillna(0)+1).cumprod()
         data.reset_index(inplace=True)
         return data
 
@@ -42,16 +43,26 @@ if selected_stock:
     data1=load_data(selected_etf)
     data_load_state.text("Loading data...done!")
 
+    stock_growth=(data["Adj Close"].pct_change().fillna(0)+1).cumprod()
+    index_growth=(data1["Adj Close"].pct_change().fillna(0)+1).cumprod()
+
     st.subheader('Raw Data')
     st.write(data.head())
 
     def plot_raw_data():
         fig=go.Figure()
         fig.add_trace(go.Scatter(x=data['Date'],y=data['Adj Close'],name=selected_stock))
-        if selected_etf:
-            fig.add_trace(go.Scatter(x=data1['Date'],y=data1['Adj Close'],name=selected_etf,yaxis='y2'))
+        #if selected_etf:
+            #fig.add_trace(go.Scatter(x=data1['Date'],y=data1['Adj Close'],name=selected_etf,yaxis='y2'))
         fig.layout.update(title_text="Time Series Data",xaxis_rangeslider_visible=False)
         fig.update_layout(yaxis2=dict(overlaying='y',side='right'))
+        st.plotly_chart(fig,use_container_width=True)
+
+    def plot_growth_data():
+        fig=go.Figure()
+        fig.add_trace(go.Line(x=data.index,y=stock_growth,name="Stock_Growth"))
+        fig.add_trace(go.Line(x=data1.index,y=index_growth,name="Index_Growth"))
+        fig.layout.update(title_text="Growth Comparison",xaxis_rangeslider_visible=False)
         st.plotly_chart(fig,use_container_width=True)
 
     def plot_box_plot():
@@ -61,6 +72,16 @@ if selected_stock:
     col1,col2=st.columns(2)
     with col1:
         plot_raw_data()
+
+    corr_coeff=data["Adj Close"].corr(data1["Adj Close"])
     
     with col2:
         plot_box_plot()
+
+    st.markdown("------")
+
+    col1,col2=st.columns([8,2])
+    with col1:
+        plot_growth_data()
+
+    col2.metric("**:red[Correlation Coefficient]**",round(corr_coeff,2))
