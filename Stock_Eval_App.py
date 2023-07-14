@@ -3,6 +3,7 @@ from datetime import date
 from datetime import timedelta
 import pandas as pd
 import plotly.express as px
+import numpy as np
 
 import yfinance as yf
 from plotly import graph_objs as go
@@ -60,8 +61,8 @@ if selected_stock:
 
     def plot_growth_data():
         fig=go.Figure()
-        fig.add_trace(go.Line(x=data.index,y=stock_growth,name="Stock_Growth"))
-        fig.add_trace(go.Line(x=data1.index,y=index_growth,name="Index_Growth"))
+        fig.add_trace(go.Line(x=data.index,y=stock_growth,name=selected_stock))
+        fig.add_trace(go.Line(x=data1.index,y=index_growth,name=selected_etf))
         fig.layout.update(title_text="Growth Comparison",xaxis_rangeslider_visible=False)
         st.plotly_chart(fig,use_container_width=True)
 
@@ -69,6 +70,52 @@ if selected_stock:
         fig = px.box(data_frame=data, x='YQ', y='Adj Close', title=selected_stock +'- Adj Close')
         st.plotly_chart(fig,use_container_width=True)
 
+    def CAGR(data):
+        df = data.copy()
+        df['daily_returns'] = df['Adj Close'].pct_change()
+        df['cumulative_returns'] = (1 + df['daily_returns']).cumprod()
+        trading_days = 252
+        n = len(df)/ trading_days
+        cagr = (df['cumulative_returns'].iloc[-1])**(1/n) - 1
+        return cagr
+
+    def volatility(data):
+        df = data.copy()
+        df['daily_returns'] = df['Adj Close'].pct_change()
+        trading_days = 252
+        vol = df['daily_returns'].std() * np.sqrt(trading_days)
+        return vol
+
+    col1,col2,col3=st.columns([7,1.5,1.5])
+    with col1:
+        plot_growth_data()
+
+    with col2:
+        stock_name=f"**{selected_stock}** **__CAGR%**"
+        st.markdown(stock_name)
+        st.subheader(round(CAGR(data) * 100,2))
+        st.markdown("------")
+        comp_name=f"**{selected_etf}** **__CAGR%**"
+        st.markdown(comp_name)
+        st.subheader(round(CAGR(data1) * 100,2))
+        
+        #metric("**:red[Correlation Coefficient]**",round(corr_coeff,2))
+        
+
+    with col3:
+        stock_name=f"**{selected_stock}** **__VOL%**"
+        st.markdown(stock_name)
+        st.subheader(round(volatility(data) * 100,2))
+        st.markdown("------")
+        comp_name=f"**{selected_etf}** **__VOL%**"
+        st.markdown(comp_name)
+        st.subheader(round(volatility(data1) * 100,2))
+        
+        #metric("**:red[Correlation Coefficient]**",round(corr_coeff,2))
+        
+    
+    st.markdown("------")
+    
     col1,col2=st.columns(2)
     with col1:
         plot_raw_data()
@@ -77,11 +124,3 @@ if selected_stock:
     
     with col2:
         plot_box_plot()
-
-    st.markdown("------")
-
-    col1,col2=st.columns([8,2])
-    with col1:
-        plot_growth_data()
-
-    col2.metric("**:red[Correlation Coefficient]**",round(corr_coeff,2))
