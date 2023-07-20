@@ -47,14 +47,14 @@ if selected_stock:
     stock_growth=(data["Adj Close"].pct_change().fillna(0)+1).cumprod()
     index_growth=(data1["Adj Close"].pct_change().fillna(0)+1).cumprod()
 
-    st.subheader('Raw Data')
-    st.write(data.head())
+    #st.subheader('Raw Data')
+    #st.write(data)
 
     def plot_raw_data():
         fig=go.Figure()
         fig.add_trace(go.Scatter(x=data['Date'],y=data['Adj Close'],name=selected_stock))
-        #if selected_etf:
-            #fig.add_trace(go.Scatter(x=data1['Date'],y=data1['Adj Close'],name=selected_etf,yaxis='y2'))
+        if selected_etf:
+            fig.add_trace(go.Scatter(x=data1['Date'],y=data1['Adj Close'],name=selected_etf,yaxis='y2'))
         fig.layout.update(title_text="Time Series Data",xaxis_rangeslider_visible=False)
         fig.update_layout(yaxis2=dict(overlaying='y',side='right'))
         st.plotly_chart(fig,use_container_width=True)
@@ -69,12 +69,18 @@ if selected_stock:
     def plot_box_plot():
         fig = px.box(data_frame=data, x='YQ', y='Adj Close', title=selected_stock +'- Adj Close')
         st.plotly_chart(fig,use_container_width=True)
-
+    
+    if Time_Frame== "1wk" or Time_Frame=="1mo" or Time_Frame == "3mo":
+        trading_days=252
+    else:
+        trading_days=52
+    
+    
     def CAGR(data):
         df = data.copy()
         df['daily_returns'] = df['Adj Close'].pct_change()
         df['cumulative_returns'] = (1 + df['daily_returns']).cumprod()
-        trading_days = 252
+        #trading_days = 252
         n = len(df)/ trading_days
         cagr = (df['cumulative_returns'].iloc[-1])**(1/n) - 1
         return cagr
@@ -82,38 +88,48 @@ if selected_stock:
     def volatility(data):
         df = data.copy()
         df['daily_returns'] = df['Adj Close'].pct_change()
-        trading_days = 252
+        #trading_days = 252
         vol = df['daily_returns'].std() * np.sqrt(trading_days)
         return vol
 
-    col1,col2,col3=st.columns([7,1.5,1.5])
+    def sharpe_ratio(data, rf):
+        df = data.copy()
+        sharpe = (CAGR(df) - rf)/ volatility(df)
+        return sharpe 
+
+    col1,col2,col3,col4=st.columns([6.25,1.25,1.25,1.25])
     with col1:
         plot_growth_data()
 
     with col2:
-        stock_name=f"**{selected_stock}** **__CAGR%**"
+        stock_name=f"**{selected_stock}** **_CAGR**"
         st.markdown(stock_name)
-        st.subheader(round(CAGR(data) * 100,2))
+        st.subheader(f'{round(CAGR(data)*100,1)}%')
         st.markdown("------")
-        comp_name=f"**{selected_etf}** **__CAGR%**"
+        comp_name=f"**{selected_etf}** **_CAGR**"
         st.markdown(comp_name)
-        st.subheader(round(CAGR(data1) * 100,2))
+        st.subheader(f'{round(CAGR(data1)*100,1)}%')
         
-        #metric("**:red[Correlation Coefficient]**",round(corr_coeff,2))
-        
-
     with col3:
-        stock_name=f"**{selected_stock}** **__VOL%**"
+        stock_name=f"**{selected_stock}** **_VOL**"
         st.markdown(stock_name)
-        st.subheader(round(volatility(data) * 100,2))
+        st.subheader(f'{round(volatility(data) * 100,1)}%')
         st.markdown("------")
-        comp_name=f"**{selected_etf}** **__VOL%**"
+        comp_name=f"**{selected_etf}** **_VOL**"
         st.markdown(comp_name)
-        st.subheader(round(volatility(data1) * 100,2))
+        st.subheader(f'{round(volatility(data1) * 100,1)}%')
+              
+    with col4:
+        stock_name=f"**{selected_stock}** **_SHRP**"
+        st.markdown(stock_name)
+        st.subheader(round(sharpe_ratio(data,0.06) * 100,1))
+        st.markdown("------")
+        comp_name=f"**{selected_etf}** **_SHRP**"
+        st.markdown(comp_name)
+        st.subheader(round(sharpe_ratio(data1,0.06) * 100,1))
         
         #metric("**:red[Correlation Coefficient]**",round(corr_coeff,2))
-        
-    
+
     st.markdown("------")
     
     col1,col2=st.columns(2)
